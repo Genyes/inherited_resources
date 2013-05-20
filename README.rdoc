@@ -562,6 +562,14 @@ If your controller defines a method named permitted_params, Inherited Resources 
 
 Note that this doesn't work if you use strong_parameters' require method instead of permit, because whereas permit returns the entire sanitized parameter hash, require returns only the sanitized params below the parameter you required.
 
+Instead you can stick to standard Rails 4 notation (as rails scaffold generates) and write:
+
+    def widget_params
+      params.require(:widget).permit(:permitted_field, :other_permitted_field)
+    end
+
+In such case you should remove #permitted_params method because it has greater priority.
+
 == Bugs and Feedback
 
 If you discover any bugs, please describe it in the issues tracker, including Rails and Inherited Resources versions.
