@@ -321,13 +321,13 @@ module InheritedResources
       end
 
       def permitted_params
-        return nil  unless respond_to?(resource_params_method_name, true)
+        return nil unless respond_to?(resource_params_method_name, true)
         {resource_request_name => send(resource_params_method_name)}
       end
 
       # extract attributes from params
       def build_resource_params
-        parameters = permitted_params || params
+        parameters = !response.get? && permitted_params ? permitted_params : params
         rparams = [parameters[resource_request_name] || parameters[resource_instance_name] || {}]
         if without_protection_given?
           rparams << without_protection
