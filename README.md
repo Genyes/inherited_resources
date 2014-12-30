@@ -1,3 +1,12 @@
+## Deprecation notice
+ 
+Since Rails 3 came out, I have no longer used Inherited Resources and it is no
+longer actively maintained. I have found that the responders abstraction
+offers the perfect balance between hiding and showing too much logic in controllers.
+That said, I suggest developers to make use of Rails' `respond_with` feature
+alongside the [responders gem](https://github.com/plataformatec/responders) as a
+replacement to Inherited Resources.
+
 ## Inherited Resources
 
 Inherited Resources speeds up development by making your controllers inherit
@@ -162,7 +171,7 @@ One reason to use the `inherit_resources` macro would be to ensure that your con
 never responds with the html mime-type. `InheritedResources::Base` already
 responds to `:html`, and the `respond_to` macro is strictly additive.
 Therefore, if you want to create a controller that, for example, responds ONLY via `:js`,
-you will have write it this way:
+you will have to write it this way:
 
 ```ruby
 class AccountsController < ApplicationController
@@ -208,7 +217,7 @@ projects collection:
 class ProjectsController < InheritedResources::Base
   protected
     def collection
-      @projects ||= end_of_association_chain.paginate(:page => params[:page])
+      get_collection_ivar || set_collection_ivar(end_of_association_chain.paginate(:page => params[:page]))
     end
 end
 ```
@@ -262,7 +271,7 @@ end
 ```
 
 Since most of the time when you change a create, update or destroy
-action you do so because you want to to change its redirect url, a shortcut is
+action you do so because you want to change its redirect url, a shortcut is
 provided. So you can do:
 
 ```ruby
@@ -310,6 +319,18 @@ end
 
 Yes, it's that simple! The nice part is since you already set the instance variable
 `@project`, it will not build a project again.
+
+Same goes for updating the project:
+
+```ruby
+class ProjectsController < InheritedResources::Base
+  def update
+    @project = Project.find(params[:id])
+    @project.something_special!
+    update!
+  end
+end
+```
 
 Before we finish this topic, we should talk about one more thing: "success/failure
 blocks". Let's suppose that when we update our project, in case of failure, we
@@ -634,9 +655,8 @@ index actions accordingly). Also, it will produce `delete_resource_{path,url}` a
 Sometimes just DRYing up the controllers is not enough. If you need to DRY up your views,
 check this Wiki page:
 
-```
 https://github.com/josevalim/inherited_resources/wiki/Views-Inheritance
-```
+
 
 Notice that Rails 3.1 ships with view inheritance built-in.
 
@@ -674,6 +694,8 @@ def permitted_params
 end
 ```
 
+Remember that if your field is sent by client to server as an array, you have to write `:permitted_field => []`, not just `:permitted_field`.
+
 Note that this doesn't work if you use strong_parameters' require method
 instead of permit, because whereas permit returns the entire sanitized
 parameter hash, require returns only the sanitized params below the parameter
@@ -683,7 +705,7 @@ If you need `params.require` you can do it like this:
 
 ```ruby
 def permitted_params
-  {:widget => params.require(:widget).permit(:permitted_field, :other_permitted_field)}
+  {:widget => params.fetch(:widget, {}).permit(:permitted_field, :other_permitted_field)}
 end
 ```
 
@@ -691,9 +713,21 @@ Or better yet just override `#build_resource_params` directly:
 
 ```ruby
 def build_resource_params
-  [params.require(:widget).permit(:permitted_field, :other_permitted_field)]
+  [params.fetch(:widget, {}).permit(:permitted_field, :other_permitted_field)]
 end
 ```
+
+
+Instead you can stick to a standard Rails 4 notation (as rails scaffold generates) and write:
+
+```ruby
+def widget_params
+  params.require(:widget).permit(:permitted_field, :other_permitted_field)
+end
+```
+
+In such case you should remove #permitted_params method because it has greater priority.
+
 
 ## Bugs and Feedback
 
@@ -701,5 +735,4 @@ If you discover any bugs, please describe it in the issues tracker, including Ra
 
 Questions are better handled on StackOverflow.
 
-Copyright (c) 2009-2012 José Valim http://blog.plataformatec.com.br
-See the attached MIT License.
+MIT License. Copyright (c) 2009-2012 José Valim.

@@ -1,6 +1,10 @@
 require 'strong_parameters'
 require File.expand_path('test_helper', File.dirname(__FILE__))
 
+if ActionPack::VERSION::MAJOR == 3
+  require 'strong_parameters'
+end
+
 class Widget
   extend ActiveModel::Naming
 end
@@ -12,6 +16,7 @@ end
 class WidgetsController < InheritedResources::Base
 end
 
+<<<<<<< HEAD
 class HotelsController < InheritedResources::Base
   def hotel_params
     params.require(:hotel).permit(:permitted)
@@ -19,6 +24,9 @@ class HotelsController < InheritedResources::Base
   private :hotel_params
 end
 
+=======
+# test usage of `permitted_params`
+>>>>>>> 9f1c0edd6b4ceb5a1f643da5ce844ccd52364d53
 class StrongParametersTest < ActionController::TestCase
   def setup
     @controller = WidgetsController.new
@@ -47,7 +55,7 @@ class StrongParametersTest < ActionController::TestCase
     put :update, :id => '42', :widget => {:permitted => 'param', :prohibited => 'param'}
   end
 
-  # permitted_params has greater priority
+  # `permitted_params` has greater priority than `widget_params`
   def test_with_permitted_and_resource_methods
       @controller.stubs(:widget_params).returns(:permitted => 'another_param')
       class << @controller
@@ -58,7 +66,8 @@ class StrongParametersTest < ActionController::TestCase
   end
 end
 
-class StrongParametersWithoutPermittedParamsMethodTest < ActionController::TestCase
+# test usage of `widget_params`
+class StrongParametersWithoutPermittedParamsTest < ActionController::TestCase
   def setup
     @controller = WidgetsController.new
     @controller.stubs(:widget_url).returns("/")
@@ -68,33 +77,59 @@ class StrongParametersWithoutPermittedParamsMethodTest < ActionController::TestC
     end
   end
 
-  def test_specific_resource_params_method_overriden
-    Widget.expects(:new).with(:permitted => 'param').returns(mock(:save => true))
-    post :create, :widget => { :permitted => 'param', :prohibited => 'param' }
-  end
-end
-
-class StrongParametersWithRequireTest < ActionController::TestCase
-  def setup
-    @controller = HotelsController.new
-    @controller.stubs(:hotel_url).returns("/")
-  end
-
   def test_permitted_params_from_new
-    Hotel.expects(:new).with('permitted' => 'param')
-    get :new, :hotel => { :permitted => 'param', :prohibited => 'param' }
+    Widget.expects(:new).with(:permitted => 'param')
+    get :new, :widget => { :permitted => 'param', :prohibited => 'param' }
   end
 
   def test_permitted_params_from_create
-    Hotel.expects(:new).with( 'permitted' => 'param').returns(mock(:save => true))
-    post :create, :hotel => { :permitted => 'param', :prohibited => 'param' }
+    Widget.expects(:new).with(:permitted => 'param').returns(mock(:save => true))
+    post :create, :widget => { :permitted => 'param', :prohibited => 'param' }
   end
 
   def test_permitted_params_from_update
-    mock_hotel = mock
-    mock_hotel.stubs(:class).returns(Hotel)
-    mock_hotel.expects(:update_attributes).with('permitted' => 'param')
-    Hotel.expects(:find).with('42').returns(mock_hotel)
-    put :update, :id => '42', :hotel => {:permitted => 'param', :prohibited => 'param'}
+    mock_widget = mock
+    mock_widget.stubs(:class).returns(Widget)
+    mock_widget.expects(:update_attributes).with(:permitted => 'param')
+    Widget.expects(:find).with('42').returns(mock_widget)
+    put :update, :id => '42', :widget => {:permitted => 'param', :prohibited => 'param'}
+  end
+end
+
+# test usage of `widget_params` integrated with strong parameters (not using stubs)
+class StrongParametersIntegrationTest < ActionController::TestCase
+  def setup
+    @controller = WidgetsController.new
+    @controller.stubs(:widget_url).returns("/")
+
+    class << @controller
+      define_method :widget_params do
+        params.require(:widget).permit(:permitted)
+      end
+      private :widget_params
+    end
+  end
+
+  def test_permitted_empty_params_from_new
+    Widget.expects(:new).with({})
+    get :new, {}
+  end
+
+  def test_permitted_params_from_new
+    Widget.expects(:new).with('permitted' => 'param')
+    get :new, :widget => { :permitted => 'param', :prohibited => 'param' }
+  end
+
+  def test_permitted_params_from_create
+    Widget.expects(:new).with('permitted' => 'param').returns(mock(:save => true))
+    post :create, :widget => { :permitted => 'param', :prohibited => 'param' }
+  end
+
+  def test_permitted_params_from_update
+    mock_widget = mock
+    mock_widget.stubs(:class).returns(Widget)
+    mock_widget.expects(:update_attributes).with('permitted' => 'param')
+    Widget.expects(:find).with('42').returns(mock_widget)
+    put :update, :id => '42', :widget => {:permitted => 'param', :prohibited => 'param'}
   end
 end

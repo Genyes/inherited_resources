@@ -1,6 +1,13 @@
-# UNRELEASED
+# Version 1.5.1
+
+* Lock the Rails version until only 4.2.
+* Fix parent class lookup.
+* Fix resource_class default value definition.
+
+# Version 1.5.0
 
 * Supports nested modules (namespaced models and controllers).
+* Supports Rails 4 Strong Parameters notation.
 
 # Version 1.4.1
 
